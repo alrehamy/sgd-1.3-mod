@@ -1,0 +1,130 @@
+
+
+
+
+** RUNNING THE STOCHASTIC GRADIENT CRF ON THE CONLL CHUNKING TASK
+
+The program "crfsgd" uses the same formats as CRF++ for 
+template files and data files. These formats are explained
+on the CRF++ page http://crfpp.sourceforge.net.
+However, the program "crfsgd" wants gzipped data files
+instead of plain text files. 
+
+The stochastic gradient implemnentation is quite straightforward.
+The learning rate has the usual form 1/lambda(t+t0).
+The constant t0 is automatically chosen by a calibration 
+routine that tries various learning rates on a subset of the data.
+Training examples are shuffled before each epoch.
+This produces an faster but more chaotic convergence.
+
+
+
+-- Usage.
+
+$ ./crfsgd
+Usage (training): crfsgd [options] model template traindata [devdata]
+Usage (tagging):  crfsgd -t model testdata
+Options for training:
+ -c <num> : capacity control parameter (1.0)
+ -f <num> : threshold on the occurences of each feature (3)
+ -r <num> : total number of epochs (50)
+ -h <num> : epochs between each testing phase (10)
+ -e <cmd> : performance evaluation command (conlleval -q)
+ -q       : silent mode
+
+
+
+-- Training the model:
+   Performance is evaluated on both sets every 10 epochs.
+   This is convenient to see the how testing performance improves.
+   Note that the F1 scores are a bit unstable.
+
+$ ./crfsgd -c 1.0 -f 3 model.gz template \
+        ../data/conll2000/train.txt.gz \
+        ../data/conll2000/test.txt.gz
+<...>
+  sentences: 8936  outputs: 22
+  cutoff: 3  features: 76329  parameters: 1679700
+<...>
+[Epoch 10] --  wnorm: 8859.84  total time: 127.55 seconds
+Training perf:  sentences: 8936  losses: 5212.97  objective*n: 9642.89
+accuracy:  99.31%; precision:  98.82%; recall:  98.64%; FB1:  98.73
+Testing perf:  sentences: 2012  losses: 4553.57  objective*n: 5551
+accuracy:  95.86%; precision:  93.63%; recall:  93.35%; FB1:  93.49
+<...>
+[Epoch 20] --  wnorm: 9515.74  total time: 237.38 seconds
+Training perf:  sentences: 8936  losses: 4594.29  objective*n: 9352.16
+accuracy:  99.58%; precision:  99.24%; recall:  99.15%; FB1:  99.20
+Testing perf:  sentences: 2012  losses: 4482.49  objective*n: 5553.76
+accuracy:  95.95%; precision:  93.69%; recall:  93.57%; FB1:  93.63
+<...>
+[Epoch 30] --  wnorm: 9645.09  total time: 347.32 seconds
+Training perf:  sentences: 8936  losses: 4338.68  objective*n: 9161.22
+accuracy:  99.65%; precision:  99.35%; recall:  99.22%; FB1:  99.28
+Testing perf:  sentences: 2012  losses: 4444.16  objective*n: 5529.99
+accuracy:  95.96%; precision:  93.76%; recall:  93.56%; FB1:  93.66
+<...>
+[Epoch 40] --  wnorm: 9672.71  total time: 457.48 seconds
+Training perf:  sentences: 8936  losses: 4297.14  objective*n: 9133.49
+accuracy:  99.65%; precision:  99.36%; recall:  99.28%; FB1:  99.32
+Testing perf:  sentences: 2012  losses: 4463.01  objective*n: 5551.95
+accuracy:  95.97%; precision:  93.76%; recall:  93.59%; FB1:  93.68
+<...>
+[Epoch 50] --  wnorm: 9673.7  total time: 567.79 seconds
+Training perf:  sentences: 8936  losses: 4261.25  objective*n: 9098.1
+accuracy:  99.66%; precision:  99.39%; recall:  99.25%; FB1:  99.32
+Testing perf:  sentences: 2012  losses: 4442.86  objective*n: 5531.91
+accuracy:  96.04%; precision:  93.86%; recall:  93.64%; FB1:  93.75
+
+
+
+-- Testing the final model:
+
+$ ./crfsgd -t model.gz ../data/conll2000/test.txt.gz | ./conlleval
+processed 47377 tokens with 23852 phrases; found: 23797 phrases; correct: 22335.
+accuracy:  96.04%; precision:  93.86%; recall:  93.64%; FB1:  93.75
+             ADJP: precision:  80.29%; recall:  75.34%; FB1:  77.74  411
+             ADVP: precision:  83.10%; recall:  81.18%; FB1:  82.13  846
+            CONJP: precision:  55.56%; recall:  55.56%; FB1:  55.56  9
+             INTJ: precision: 100.00%; recall:  50.00%; FB1:  66.67  1
+              LST: precision:   0.00%; recall:   0.00%; FB1:   0.00  0
+               NP: precision:  94.33%; recall:  94.00%; FB1:  94.17  12379
+               PP: precision:  96.73%; recall:  97.82%; FB1:  97.27  4865
+              PRT: precision:  80.58%; recall:  78.30%; FB1:  79.43  103
+             SBAR: precision:  89.13%; recall:  84.30%; FB1:  86.65  506
+               VP: precision:  93.63%; recall:  94.01%; FB1:  93.82  4677
+
+
+** COMPARATIVE EXPERIMENTS WITH CRF++
+
+
+$ crf_learn -c 1.0 -f 3 template train.txt model
+<...>
+Number of sentences: 8936
+Number of features:  1679700
+<...>
+iter=18 terr=0.04522 serr=0.45636 act=1679700 obj=24917.57905 diff=0.02882
+<...>
+iter=36 terr=0.02188 serr=0.27775 act=1679700 obj=13697.78077 diff=0.01717
+<...>
+iter=71 terr=0.00518 serr=0.09109 act=1679700 obj=9654.43394 diff=0.00167
+<...>
+iter=142 terr=0.00340 serr=0.06256 act=1679700 obj=9042.07254 diff=0.00007
+Done!4335.34 s
+
+
+$ crf_test -m model test.txt | tr '	' ' ' | ../../../conlleval 
+processed 47377 tokens with 23852 phrases; found: 23799 phrases; correct: 22334.
+accuracy:  96.02%; precision:  93.84%; recall:  93.64%; FB1:  93.74
+             ADJP: precision:  79.71%; recall:  74.43%; FB1:  76.98  409
+             ADVP: precision:  83.18%; recall:  81.06%; FB1:  82.11  844
+            CONJP: precision:  55.56%; recall:  55.56%; FB1:  55.56  9
+             INTJ: precision: 100.00%; recall:  50.00%; FB1:  66.67  1
+              LST: precision:   0.00%; recall:   0.00%; FB1:   0.00  0
+               NP: precision:  94.36%; recall:  94.03%; FB1:  94.19  12378
+               PP: precision:  96.71%; recall:  97.82%; FB1:  97.26  4866
+              PRT: precision:  79.05%; recall:  78.30%; FB1:  78.67  105
+             SBAR: precision:  88.65%; recall:  84.67%; FB1:  86.62  511
+               VP: precision:  93.63%; recall:  93.99%; FB1:  93.81  4676
+
+
