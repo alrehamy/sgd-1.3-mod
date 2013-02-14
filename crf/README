@@ -1,7 +1,6 @@
 
 
 
-
 ** RUNNING THE STOCHASTIC GRADIENT CRF ON THE CONLL CHUNKING TASK
 
 The program "crfsgd" uses the same formats as CRF++ for 
@@ -113,7 +112,7 @@ iter=142 terr=0.00340 serr=0.06256 act=1679700 obj=9042.07254 diff=0.00007
 Done!4335.34 s
 
 
-$ crf_test -m model test.txt | tr '	' ' ' | ../../../conlleval 
+$ crf_test -m model test.txt | ../../../conlleval -d '\t'
 processed 47377 tokens with 23852 phrases; found: 23799 phrases; correct: 22334.
 accuracy:  96.02%; precision:  93.84%; recall:  93.64%; FB1:  93.74
              ADJP: precision:  79.71%; recall:  74.43%; FB1:  76.98  409
